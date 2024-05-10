@@ -1,114 +1,170 @@
-# Importa la librería tkinter y la renombra como tk
 import tkinter as tk
-# Importa todas las clases y funciones de la librería tkinter
 from tkinter import *
-# Importa la clase messagebox de la librería tkinter para mostrar mensajes de alerta
+from tkinter import filedialog
 from tkinter import messagebox
-# Importa la clase Tooltip del módulo Tooltip para mostrar información adicional sobre los botones
 from Tooltip import Tooltip
-# Importa el módulo pygame.mixer y lo renombra como mx para reproducir archivos de audio
 import pygame.mixer as mx
+import pygame
+import os
 
-# Define una clase llamada Reproductor para crear una aplicación reproductora de música
 class Reproductor():
-    # Método para reproducir la pista de audio
+    pygame.mixer.init()
+    def cargar_canciones(self):
+        lista_canciones = []
+        carpeta_musica = os.path.abspath(r"laboratorio\music")
+        for nombre_archivo in os.listdir(carpeta_musica):
+            if nombre_archivo.endswith(".mp3"):
+                ruta_archivo = os.path.join(r"laboratorio\music", nombre_archivo)
+                try:
+                    # Carga el archivo MP3 usando pygame
+                    cancion = pygame.mixer.music.load(ruta_archivo)
+                    lista_canciones.append(cancion)
+                except pygame.error:
+                    print(f"Error al cargar canción: {ruta_archivo}")
+
+        return lista_canciones
+
+    def añadir(self, event):
+        try:
+            self.canciones_seleccionadas = filedialog.askopenfilenames(initialdir="/", title="Elige una canción", filetypes=(("mp3", "*.mp3"), ("all files", "*.*")))
+
+            for ruta_archivo in self.canciones_seleccionadas:
+                nombre_cancion = ruta_archivo.split("/")[-1]
+                self.pantalla.insert(END, nombre_cancion)  
+
+            self.lblEstado.config(text="Canciones añadidas")
+        except pygame.error:  
+            print(f"Error al añadir canciones")
+
     def play(self, event):
-        # Carga la pista de audio utilizando pygame.mixer
-        mx.music.load(r"sounds\Pista.mp3")
-        # Reproduce la pista de audio
-        mx.music.play()
-        # Actualiza el estado de reproducción
+        self.canciones_seleccionadas = self.pantalla.get(ACTIVE)  # Get selected song
+        if self.canciones_seleccionadas:  # Check if a song is selected
+            ruta_archivo = os.path.join(r"C:\Users\User\Desktop\LABORATORIO-1\laboratorio\music", self.cancion)
+            try:
+                pygame.mixer.music.load(ruta_archivo)
+                pygame.mixer.music.play(loops=0)
+            except pygame.error:
+                print(f"Error: No se pudo cargar el archivo {ruta_archivo}")
+        else:
+            print("Selecciona una canción para reproducir")
+
         self.lblEstado.config(text="Reproduciendo...")
-        # Habilita el botón de pausa y detener, y deshabilita el botón de reproducción
         self.btnPause.config(state="normal")
         self.btnStop.config(state="normal")
         self.btnPlay.config(state="disabled")
 
-    # Método para pausar o reanudar la reproducción de la pista de audio
+    def stop(self, event):
+        mx.music.stop()
+        self.pantalla.selection_clear(ACTIVE)
+        mx.music.stop()
+        self.lblEstado.config(text="Reproducción Detenida...")
+        self.btnPause.config(state="disabled")
+        self.btnStop.config(state="disabled")
+        self.btnPlay.config(state="normal")
+
+    def siguiente(self, event):
+        self.proxima = self.pantalla.curselection()
+        self.proxima = self.proxima[0]+1
+        self.cancion = self.pantalla.get(self.proxima)
+        self.cancion = f"{self.cancion}.mp3"
+
+        mx.music.load(self.cancion)
+        mx.music.play(loops=0)
+
+        self.pantalla.selection_clear(0, END)
+        self.pantalla.activate(self.proxima)
+        LAST = None
+        self.pantalla.selection_set(self.proxima, LAST)
+
+    def anterior(self,event):
+        self.proxima = self.pantalla.curselection()
+        self.proxima = self.proxima[0]-1
+        self.cancion = self.pantalla.get(self.proxima)
+        self.cancion = f"{self.cancion}.mp3"
+
+        mx.music.load(self.cancion)
+        mx.music.play(loops=0)
+
+        self.pantalla.selection_clear(0,END)
+        self.pantalla.activate(self.proxima)
+
+        LAST = None
+        self.pantalla.selection_set(self.proxima, LAST)
+
     def pause(self, event):
-        # Verifica el estado de reproducción actual
         if(self.bandera == False):
-            # Si la reproducción no está pausada, pausa la reproducción
             mx.music.pause()
-            # Actualiza el estado de reproducción
             self.lblEstado.config(text="Reproducción Pausada...")
-            # Habilita el botón de pausa y detener, y deshabilita el botón de reproducción
             self.btnPause.config(state="normal")
             self.btnStop.config(state="normal")
             self.btnPlay.config(state="disabled")
             self.bandera = True
         else:
-            # Si la reproducción está pausada, reanuda la reproducción
             mx.music.unpause()
-            # Actualiza el estado de reproducción
             self.lblEstado.config(text="Reproduciendo...")
-            # Habilita el botón de pausa y detener, y deshabilita el botón de reproducción
             self.btnPause.config(state="normal")
             self.btnStop.config(state="normal")
             self.btnPlay.config(state="disabled")
             self.bandera = False
+    
+    def borrar(self, event):
+        self.pantalla.delete(ANCHOR)
 
-    # Método para detener la reproducción de la pista de audio
-    def stop(self, event):
-        # Detiene la reproducción de la pista de audio
         mx.music.stop()
-        # Actualiza el estado de reproducción
-        self.lblEstado.config(text="Reproducción Detenida...")
-        # Deshabilita el botón de pausa y detener, y habilita el botón de reproducción
-        self.btnPause.config(state="disabled")
-        self.btnStop.config(state="disabled")
-        self.btnPlay.config(state="normal")
 
-    # Método constructor de la clase
+    def borrarTodas(self, event):
+        self.pantalla.delete(0,END)
+
+        mx.music.stop()
+
     def __init__(self):
-        # Crea una nueva ventana de tkinter
         self.ventana = tk.Tk()
-        # Establece el título de la ventana
-        self.ventana.title("Mi Reproductor")
-        # Configura el tamaño de la ventana
-        self.ventana.config(width=500, height=500)
-        # Evita que la ventana pueda redimensionarse
+        self.ventana.title("Reproductor de Musica")
+        self.ventana.config(width=700, height=500)
         self.ventana.resizable(0,0)
 
-        # Inicializa pygame.mixer para reproducir audio
+        self.pantalla = Listbox(self.ventana, bg="lightblue", fg="blue", width=60, selectbackground="white", selectforeground="black")
+        self.pantalla.place(rely=20)
+
+        lista_canciones = tk.Listbox(self.ventana, width=300, height=200)
+        lista_canciones.place(x=10, y=10)
+
+
         mx.init()
-        # Inicializa la bandera para controlar el estado de reproducción
         self.bandera = False
 
-        # Carga los iconos de los botones de reproducción
-        iconoPlay = tk.PhotoImage(file=r"icons\control_play.png")
-        iconoPause = tk.PhotoImage(file=r"icons\control_pause.png")
-        iconoStop = tk.PhotoImage(file=r"icons\control_stop.png")
+        iconoPlay = tk.PhotoImage(file=r"laboratorio\icons\control_play.png")
+        iconoPause = tk.PhotoImage(file=r"laboratorio\icons\control_pause.png")
+        iconoStop = tk.PhotoImage(file=r"laboratorio\icons\control_stop.png")
+        iconoAnterior = tk.PhotoImage(file=r"laboratorio\icons\control_start.png")
+        iconoSiguiente = tk.PhotoImage(file=r"laboratorio\icons\control_end.png")
 
-        # Crea el botón de reproducción
         self.btnPlay = tk.Button(self.ventana, image=iconoPlay)
         self.btnPlay.place(relx=0.5, rely=1, y=-50, width=25, height=25)
-        # Asocia el método play al evento de clic del botón de reproducción
         self.btnPlay.bind("<Button-1>", self.play)
-        # Crea un mensaje emergente de información para el botón de reproducción
         Tooltip(self.btnPlay, "Presione para Iniciar la reproducción...")
 
-        # Crea el botón de pausa y lo deshabilita inicialmente
         self.btnPause = tk.Button(self.ventana, image=iconoPause, state="disabled")
         self.btnPause.place(relx=0.5, rely=1, y=-50, x=50, width=25, height=25)
-        # Asocia el método pause al evento de clic del botón de pausa
         self.btnPause.bind("<Button-1>", self.pause)
-        # Crea un mensaje emergente de información para el botón de pausa
         Tooltip(self.btnPause, "Presione para Pausar la reproducción...")
 
-        # Crea el botón de detener y lo
-
- deshabilita inicialmente
         self.btnStop = tk.Button(self.ventana, image=iconoStop, state="disabled")
         self.btnStop.place(relx=0.5, rely=1, y=-50, x=-50, width=25, height=25)
-        # Asocia el método stop al evento de clic del botón de detener
         self.btnStop.bind("<Button-1>", self.stop)
-        # Crea un mensaje emergente de información para el botón de detener
         Tooltip(self.btnStop, "Presione para Detener la reproducción...")
 
-        # Crea una etiqueta para mostrar el estado de reproducción
+        self.btnAnterior = tk.Button(self.ventana, image=iconoAnterior)
+        self.btnAnterior.place(relx=0.5, rely=1, y=-50, x=-90, width=25, height=25)
+        self.btnAnterior.bind("<Button-1>", self.anterior)
+        Tooltip(self.btnAnterior, "Presione para reproducir la cancion anterior...")
+
+        self.btnSiguiente = tk.Button(self.ventana, image=iconoSiguiente)
+        self.btnSiguiente.place(relx=0.5, rely=1, y=-50, x=90, width=25, height=25)
+        self.btnSiguiente.bind("<Button-1>", self.anterior)
+        Tooltip(self.btnSiguiente, "Presione para reproducir la cancion anterior...")
+
         self.lblEstado = tk.Label(self.ventana, text="Cargando...")
         self.lblEstado.place(relx=0.5, rely=0.5, anchor="center")
 
-        # Inicia el bucle principal de la aplicación
         self.ventana.mainloop()
