@@ -8,6 +8,7 @@ import pygame
 import os
 import mutagen
 from mutagen.mp3 import MP3
+import random
 
 class Reproductor():
     pygame.mixer.init()
@@ -83,6 +84,63 @@ class Reproductor():
     for i in range(50,200,10):
         lista.append(i)
     
+    def reproduccion(self, reproduccion, lista):
+            self.barra1['value'] = random.choice(lista)
+            self.barra2['value'] = random.choice(lista)
+            self.barra3['value'] = random.choice(lista)
+            self.barra4['value'] = random.choice(lista)
+            self.barra5['value'] = random.choice(lista)
+            self.barra6['value'] = random.choice(lista)
+            self.barra7['value'] = random.choice(lista)
+            self.barra8['value'] = random.choice(lista)
+            self.barra9['value'] = random.choice(lista)
+            self.barra10['value'] = random.choice(lista)
+            self.barra11['value'] = random.choice(lista)
+            self.barra12['value'] = random.choice(lista)
+            self.barra13['value'] = random.choice(lista)
+            self.barra14['value'] = random.choice(lista)
+            self.barra15['value'] = random.choice(lista)
+            self.barra16['value'] = random.choice(lista)
+            self.barra17['value'] = random.choice(lista)
+            self.barra18['value'] = random.choice(lista)
+            self.barra19['value'] = random.choice(lista)
+            self.barra20['value'] = random.choice(lista)
+
+            self.cancionActual = self.directorio[self.posicion]
+            self.nombreCancion = self.cancionActual.split('/')
+            self.nombreCancion = self.nombreCancion[-1]
+            self.nombre['text']= self.nombreCancion
+
+            time = pygame.mixer.music.get_pos()
+            x = int(int(time)*0.001)
+            self.tiempo['value']= x  #posicion de la cancion
+
+            y = float(int(self.volumen.get())*0.1)
+            pygame.mixer.music.set_volume(y)
+            self.nivel['text']= int(y*100)
+
+            self.audio = mutagen.File(self.cancionActual)	
+            log = self.audio.info.length
+            minutos, segundos = divmod(log, 60)
+
+            minutos, segundos = int(minutos), int(segundos)
+            tt = minutos*60 + segundos
+            self.tiempo['maximum']= tt  # tiempo total de la cancion
+            self.texto['text']= str(minutos) + ":" + str(segundos)
+            
+            actualizar = self.ventana.after(100 , reproduccion)
+
+            if x == tt:
+                self.ventana.after_cancel(actualizar)
+                self.texto['text']= "00:00"
+                self.detenerEfecto()
+                if self.posicion != self.num:
+                    self.posicion = self.posicion + 1
+                    self.ventana.after(100 , reproduccion)
+                    pygame.mixer.music.play()
+                if self.posicion == self.num:
+                    self.posicion = 0
+
 
     def play(self, event):
         self.canciones_seleccionadas = self.pantalla.get(ACTIVE)  # Get selected song
