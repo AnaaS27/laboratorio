@@ -6,35 +6,83 @@ from Tooltip import Tooltip
 import pygame.mixer as mx
 import pygame
 import os
+import mutagen
+from mutagen.mp3 import MP3
 
 class Reproductor():
     pygame.mixer.init()
-    def cargar_canciones(self):
-        lista_canciones = []
-        carpeta_musica = os.path.abspath(r"laboratorio\music")
-        for nombre_archivo in os.listdir(carpeta_musica):
-            if nombre_archivo.endswith(".mp3"):
-                ruta_archivo = os.path.join(r"laboratorio\music", nombre_archivo)
-                try:
-                    # Carga el archivo MP3 usando pygame
-                    cancion = pygame.mixer.music.load(ruta_archivo)
-                    lista_canciones.append(cancion)
-                except pygame.error:
-                    print(f"Error al cargar canción: {ruta_archivo}")
+    pygame.mixer.init(frequency=44100)
+    cancionActual = ""
+    direccion = ""
+    
+    def __init__(self):
+        self.ventana = tk.Tk()
+        self.ventana.title("Reproductor de Musica")
+        self.ventana.config(width=700, height=500)
+        self.ventana.resizable(0,0)
 
-        return lista_canciones
+        self.pantalla = Listbox(self.ventana, bg="lightblue", fg="blue", width=60, selectbackground="white", selectforeground="black")
+        self.pantalla.place(rely=20)
 
-    def añadir(self, event):
-        try:
-            self.canciones_seleccionadas = filedialog.askopenfilenames(initialdir="/", title="Elige una canción", filetypes=(("mp3", "*.mp3"), ("all files", "*.*")))
+        lista_canciones = tk.Listbox(self.ventana, width=300, height=200)
+        lista_canciones.place(x=10, y=10)
 
-            for ruta_archivo in self.canciones_seleccionadas:
-                nombre_cancion = ruta_archivo.split("/")[-1]
-                self.pantalla.insert(END, nombre_cancion)  
+        self.directorio = []
+        self.posicion = 0
+        self.cancionActual = None
 
-            self.lblEstado.config(text="Canciones añadidas")
-        except pygame.error:  
-            print(f"Error al añadir canciones")
+
+        mx.init()
+        self.bandera = False
+
+        iconoPlay = tk.PhotoImage(file=r"laboratorio\icons\control_play.png")
+        iconoPause = tk.PhotoImage(file=r"laboratorio\icons\control_pause.png")
+        iconoStop = tk.PhotoImage(file=r"laboratorio\icons\control_stop.png")
+        iconoAnterior = tk.PhotoImage(file=r"laboratorio\icons\control_start.png")
+        iconoSiguiente = tk.PhotoImage(file=r"laboratorio\icons\control_end.png")
+
+        self.btnPlay = tk.Button(self.ventana, image=iconoPlay)
+        self.btnPlay.place(relx=0.5, rely=1, y=-50, width=25, height=25)
+        self.btnPlay.bind("<Button-1>", self.play)
+        Tooltip(self.btnPlay, "Presione para Iniciar la reproducción...")
+
+        self.btnPause = tk.Button(self.ventana, image=iconoPause, state="disabled")
+        self.btnPause.place(relx=0.5, rely=1, y=-50, x=50, width=25, height=25)
+        self.btnPause.bind("<Button-1>", self.pause)
+        Tooltip(self.btnPause, "Presione para Pausar la reproducción...")
+
+        self.btnStop = tk.Button(self.ventana, image=iconoStop, state="disabled")
+        self.btnStop.place(relx=0.5, rely=1, y=-50, x=-50, width=25, height=25)
+        self.btnStop.bind("<Button-1>", self.stop)
+        Tooltip(self.btnStop, "Presione para Detener la reproducción...")
+
+        self.btnAnterior = tk.Button(self.ventana, image=iconoAnterior)
+        self.btnAnterior.place(relx=0.5, rely=1, y=-50, x=-90, width=25, height=25)
+        self.btnAnterior.bind("<Button-1>", self.anterior)
+        Tooltip(self.btnAnterior, "Presione para reproducir la cancion anterior...")
+
+        self.btnSiguiente = tk.Button(self.ventana, image=iconoSiguiente)
+        self.btnSiguiente.place(relx=0.5, rely=1, y=-50, x=90, width=25, height=25)
+        self.btnSiguiente.bind("<Button-1>", self.anterior)
+        Tooltip(self.btnSiguiente, "Presione para reproducir la cancion anterior...")
+
+        self.lblEstado = tk.Label(self.ventana, text="Cargando...")
+        self.lblEstado.place(relx=0.5, rely=0.5, anchor="center")
+
+    
+    def abrirArchivo(self):
+        self.directorio = filedialog.askopenfilenames(initialdir='/',
+                                                title='Elegir la cancion',
+                                                filetypes=(('mp3 files', '*.mp3*'), ('All files', '*.*')))
+        self.posicion = 0
+        self.num = len(self.directorio)
+        self.cancionActual = self.directorio[self.posicion]
+        self.nombreCancion = self.cancionActual.split('/')[-1]
+    
+    lista = []
+    for i in range(50,200,10):
+        lista.append(i)
+    
 
     def play(self, event):
         self.canciones_seleccionadas = self.pantalla.get(ACTIVE)  # Get selected song
@@ -117,54 +165,6 @@ class Reproductor():
 
         mx.music.stop()
 
-    def __init__(self):
-        self.ventana = tk.Tk()
-        self.ventana.title("Reproductor de Musica")
-        self.ventana.config(width=700, height=500)
-        self.ventana.resizable(0,0)
-
-        self.pantalla = Listbox(self.ventana, bg="lightblue", fg="blue", width=60, selectbackground="white", selectforeground="black")
-        self.pantalla.place(rely=20)
-
-        lista_canciones = tk.Listbox(self.ventana, width=300, height=200)
-        lista_canciones.place(x=10, y=10)
-
-
-        mx.init()
-        self.bandera = False
-
-        iconoPlay = tk.PhotoImage(file=r"laboratorio\icons\control_play.png")
-        iconoPause = tk.PhotoImage(file=r"laboratorio\icons\control_pause.png")
-        iconoStop = tk.PhotoImage(file=r"laboratorio\icons\control_stop.png")
-        iconoAnterior = tk.PhotoImage(file=r"laboratorio\icons\control_start.png")
-        iconoSiguiente = tk.PhotoImage(file=r"laboratorio\icons\control_end.png")
-
-        self.btnPlay = tk.Button(self.ventana, image=iconoPlay)
-        self.btnPlay.place(relx=0.5, rely=1, y=-50, width=25, height=25)
-        self.btnPlay.bind("<Button-1>", self.play)
-        Tooltip(self.btnPlay, "Presione para Iniciar la reproducción...")
-
-        self.btnPause = tk.Button(self.ventana, image=iconoPause, state="disabled")
-        self.btnPause.place(relx=0.5, rely=1, y=-50, x=50, width=25, height=25)
-        self.btnPause.bind("<Button-1>", self.pause)
-        Tooltip(self.btnPause, "Presione para Pausar la reproducción...")
-
-        self.btnStop = tk.Button(self.ventana, image=iconoStop, state="disabled")
-        self.btnStop.place(relx=0.5, rely=1, y=-50, x=-50, width=25, height=25)
-        self.btnStop.bind("<Button-1>", self.stop)
-        Tooltip(self.btnStop, "Presione para Detener la reproducción...")
-
-        self.btnAnterior = tk.Button(self.ventana, image=iconoAnterior)
-        self.btnAnterior.place(relx=0.5, rely=1, y=-50, x=-90, width=25, height=25)
-        self.btnAnterior.bind("<Button-1>", self.anterior)
-        Tooltip(self.btnAnterior, "Presione para reproducir la cancion anterior...")
-
-        self.btnSiguiente = tk.Button(self.ventana, image=iconoSiguiente)
-        self.btnSiguiente.place(relx=0.5, rely=1, y=-50, x=90, width=25, height=25)
-        self.btnSiguiente.bind("<Button-1>", self.anterior)
-        Tooltip(self.btnSiguiente, "Presione para reproducir la cancion anterior...")
-
-        self.lblEstado = tk.Label(self.ventana, text="Cargando...")
-        self.lblEstado.place(relx=0.5, rely=0.5, anchor="center")
+    
 
         self.ventana.mainloop()
